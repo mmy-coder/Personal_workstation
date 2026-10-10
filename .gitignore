@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.tsbuildinfo
+test-results/
+playwright-report/
+prisma/backups/

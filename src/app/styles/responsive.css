@@ -1,0 +1,379 @@
+@media (min-width: 1500px) {
+  main {
+    padding-top: 38px;
+  }
+  .dashboard-metrics .metric-value {
+    font-size: 31px;
+  }
+  .dashboard-metrics .metric-label {
+    font-size: 12px;
+  }
+  .metric p {
+    font-size: 10px;
+  }
+  .chart {
+    height: 245px;
+  }
+  .chart-empty {
+    height: 267px;
+  }
+  .donut-layout {
+    min-height: 267px;
+  }
+}
+@media (max-width: 1250px) {
+  .sidebar {
+    width: 195px;
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .main-shell {
+    margin-left: 195px;
+  }
+  .brand {
+    font-size: 17px;
+  }
+  .brand-mark {
+    width: 32px;
+    height: 34px;
+  }
+  .topbar {
+    padding: 0 25px;
+  }
+  main {
+    padding: 27px 25px;
+  }
+  .dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .overview-banner > span {
+    display: none;
+  }
+  .overview-banner > a {
+    margin-left: auto;
+  }
+  .donut-layout {
+    gap: 18px;
+  }
+  .donut-plot {
+    width: 150px;
+    height: 150px;
+  }
+  .donut-legend {
+    min-width: 90px;
+  }
+  .donut-legend strong {
+    padding-left: 7px;
+  }
+  .journal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .list-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .search-field {
+    width: 100%;
+    max-width: none;
+  }
+  .calendar-metrics .metric p {
+    position: static;
+  }
+  .four-metrics .metric-value {
+    font-size: 23px;
+  }
+}
+@media (max-width: 900px) {
+  .two-columns {
+    grid-template-columns: 1fr;
+  }
+  .chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart-grid .donut-layout {
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+  }
+  .chart-grid .donut-plot {
+    width: 140px;
+    height: 140px;
+  }
+  .chart-grid .donut-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 14px;
+  }
+  .chart-grid .donut-legend > div {
+    font-size: 11px;
+  }
+  .chart-grid .donut-legend strong {
+    font-size: 11px;
+  }
+  .four-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-heading {
+    align-items: flex-start;
+  }
+  h1 {
+    font-size: 23px;
+  }
+  .current-date {
+    font-size: 10px;
+  }
+  .recent-items {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .recent-items .compact-row {
+    border-bottom: 1px solid var(--border);
+  }
+  .calendar-legend {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .week-picker {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .week-picker > .muted {
+    display: none;
+  }
+  .week-controls {
+    margin-left: 0;
+  }
+  .calendar-toolbar {
+    padding: 12px;
+  }
+  .week-picker h2 {
+    font-size: 13px;
+  }
+}
+@media (max-width: 700px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+    width: 230px;
+  }
+  .sidebar-open {
+    transform: translateX(0);
+  }
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #0f172960;
+    border: 0;
+    z-index: 25;
+  }
+  .main-shell {
+    margin-left: 0;
+  }
+  .mobile-menu {
+    display: inline-flex;
+  }
+  .topbar {
+    height: 58px;
+    padding: 0 15px;
+  }
+  .breadcrumb,
+  .topbar-actions {
+    gap: 9px;
+  }
+  .breadcrumb > span:first-of-type {
+    display: none;
+  }
+  .current-date {
+    display: none;
+  }
+  .top-divider {
+    display: none;
+  }
+  main {
+    padding: 24px 17px;
+  }
+  .page-heading {
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .page-heading h1 {
+    font-size: 21px;
+  }
+  .page-heading p {
+    font-size: 11px;
+    max-width: 230px;
+  }
+  .page-heading > .button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .dashboard-metrics {
+    gap: 9px;
+  }
+  .metric {
+    padding: 13px 11px;
+  }
+  .metric-label {
+    font-size: 10px;
+  }
+  .metric-label svg {
+    display: none;
+  }
+  .metric-value {
+    font-size: 24px;
+    margin-top: 10px;
+  }
+  .metric p {
+    font-size: 10px;
+  }
+  .overview-banner {
+    font-size: 10px;
+    padding: 11px 12px;
+  }
+  .overview-banner > a {
+    font-size: 11px;
+  }
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-grid .donut-layout {
+    flex-direction: row;
+    gap: 30px;
+  }
+  .chart-grid .donut-plot {
+    width: 175px;
+    height: 175px;
+  }
+  .chart-grid .donut-legend {
+    display: flex;
+    font-size: 11px;
+  }
+  .chart-grid .donut-legend > div {
+    font-size: 11px;
+  }
+  .panel-heading {
+    padding: 18px 18px 0;
+  }
+  .section-heading > .muted {
+    font-size: 11px;
+  }
+  .four-metrics .metric-value {
+    font-size: 25px;
+  }
+  .list-filters {
+    flex-wrap: wrap;
+  }
+  .list-toolbar {
+    padding: 14px;
+  }
+  .list-filters select {
+    flex: 1;
+  }
+  .table-footer {
+    padding: 12px 14px;
+    font-size: 10px;
+  }
+  .journal-grid {
+    grid-template-columns: 1fr;
+  }
+  .journal-intro {
+    padding: 18px 15px;
+    gap: 13px;
+  }
+  .journal-intro > .button {
+    display: none;
+  }
+  .journal-intro h2 {
+    font-size: 14px;
+  }
+  .journal-intro-icon {
+    width: 43px;
+    height: 43px;
+  }
+  .journal-controls {
+    flex-wrap: wrap;
+  }
+  .journal-controls > .search-field {
+    flex-basis: 100%;
+  }
+  .journal-controls > .list-filters {
+    margin-left: auto;
+  }
+  .calendar-metrics {
+    gap: 8px;
+  }
+  .calendar-metrics .metric {
+    padding: 12px;
+  }
+  .calendar-metrics .metric-value {
+    font-size: 22px;
+  }
+  .calendar-metrics .metric p {
+    display: none;
+  }
+  .calendar-scroll {
+    max-height: none;
+    height: 570px;
+  }
+  .calendar-legend > div {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .dialog-content {
+    max-height: 94dvh;
+    width: calc(100% - 20px);
+  }
+  .dialog-heading {
+    padding: 19px 19px 16px;
+  }
+  .editor-form {
+    padding: 18px;
+    gap: 13px;
+  }
+  .checkbox-field span {
+    display: none;
+  }
+  .journal-editor {
+    padding: 16px 18px;
+  }
+  .journal-inputs textarea {
+    min-height: 280px;
+  }
+  .journal-editor .form-footer {
+    flex-wrap: wrap;
+  }
+  .draft-status {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+  .slim-empty {
+    flex-wrap: wrap;
+  }
+  .slim-empty a {
+    margin-left: 31px;
+  }
+  .renewal-banner > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+  .app-footer {
+    padding: 0 17px 18px;
+  }
+  .settings-body {
+    padding: 0 19px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

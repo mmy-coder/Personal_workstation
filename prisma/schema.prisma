@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model BackupRestoreLink {
+  sourceKey String @id
+  targetId  String
+}
+
+model MutationReceipt {
+  key         String @id
+  fingerprint String
+  response    String
+  createdAt   DateTime @default(now())
+}
+
+model SubscriptionPayment {
+  id             String @id @default(cuid())
+  version        Int @default(0)
+  subscriptionId String
+  name           String
+  category       String
+  amountCents    Int
+  paidOn         String
+  dueOn          String
+  notes          String @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  @@index([paidOn])
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  version     Int      @default(0)
+  title       String
+  description String   @default("")
+  category    String   @default("工作")
+  start       DateTime
+  end         DateTime
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([start, end])
+}
+
+model Item {
+  id           String   @id @default(cuid())
+  version      Int      @default(0)
+  name         String
+  category     String
+  priceCents   Int?
+  purchaseDate String?
+  brand        String   @default("")
+  model        String   @default("")
+  status       String   @default("使用中")
+  notes        String   @default("")
+  imageUrl     String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Subscription {
+  id           String   @id @default(cuid())
+  version      Int      @default(0)
+  name         String
+  category     String
+  amountCents  Int
+  cycle        String
+  startDate    String
+  nextRenewal  String
+  renewalAnchorDay Int?
+  status       String   @default("使用中")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([status, nextRenewal])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  version   Int      @default(0)
+  title     String   @default("")
+  content   String
+  tags      String   @default("[]")
+  pinned    Boolean  @default(false)
+  favorite  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([createdAt])
+}
