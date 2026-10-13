@@ -73,7 +73,13 @@ export function annualCost(sub: Subscription) {
     : 0;
 }
 // Calendar recurrence clamps the anchor day to the final day of a shorter month.
-export function billingInMonth(sub: Subscription, month: Date) {
+export function billingInMonth(
+  sub: Pick<
+    Subscription,
+    "status" | "cycle" | "amountCents" | "startDate" | "nextRenewal"
+  >,
+  month: Date,
+) {
   if (sub.status !== "使用中") return 0;
   const anchor = localDate(sub.nextRenewal);
   if (sub.cycle === "年付" && anchor.getMonth() !== month.getMonth()) return 0;

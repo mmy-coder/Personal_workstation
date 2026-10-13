@@ -111,6 +111,9 @@ export type JournalPage = {
   pageSize: number;
 };
 export type WorkspaceData = Omit<Data, "journals"> & {
+  assetStats?: AssetStats;
+  monthlyBill?: number;
+  paymentMonths?: { name: string; 实际付款: number }[];
   journals: JournalPreview[];
   journalStats: {
     total: number;
@@ -118,4 +121,24 @@ export type WorkspaceData = Omit<Data, "journals"> & {
     monthCount: number;
     tags: string[];
   };
+};
+
+export type RecordPage<T> = {
+  entries: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+export type AssetStats = {
+  items: number;
+  inUse: number;
+  idle: number;
+  purchaseCents: number;
+  subscriptions: number;
+  active: number;
+  monthlyCents: number;
+  annualCents: number;
+  itemCategories: { name: string; value: number }[];
+  itemAmounts: { name: string; value: number }[];
+  subscriptionAmounts: { name: string; value: number }[];
 };

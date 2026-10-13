@@ -19,6 +19,7 @@ import { dateKey } from "@/lib/dates";
 import { workspaceURL } from "@/lib/workspace-url";
 import { createRequest } from "@/lib/create-request";
 import { requestJSON } from "@/lib/http";
+import { usePathname } from "next/navigation";
 type Store = {
   data: WorkspaceData;
   loading: boolean;
@@ -45,14 +46,26 @@ const empty: WorkspaceData = {
   journalStats: { total: 0, favorites: 0, monthCount: 0, tags: [] },
 };
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const scope =
+    pathname === "/assets"
+      ? "assets"
+      : pathname === "/journal"
+        ? "journal"
+        : pathname === "/calendar"
+          ? "calendar"
+          : "dashboard";
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const [loadedScope, setLoadedScope] = useState("");
   const now = useNow();
   const day = now ? dateKey(now) : "";
   const lastDay = useRef("");
   const nextStart = useRef<number | null>(null);
   const [data, setData] = useState<WorkspaceData>(empty),
     [loading, setLoading] = useState(true),
-    [loaded, setLoaded] = useState(false),
     [error, setError] = useState("");
+  const loaded = loadedScope === scope;
   const [changeToken, setChangeToken] = useState(0);
   const [toast, setToast] = useState<{
     message: string;
@@ -71,26 +84,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const refresh = useCallback(async () => {
     if (pending.current.size) return;
+    const requestedScope = scopeRef.current;
     const current = ++sequence.current,
       version = revision.current;
     controller.current?.abort();
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const result = await requestJSON<WorkspaceData>(workspaceURL(), {
-        cache: "no-store",
-        signal: abort.signal,
-      });
-      if (current !== sequence.current || version !== revision.current) return;
+      const result = await requestJSON<WorkspaceData>(
+        workspaceURL(new Date(), requestedScope),
+        {
+          cache: "no-store",
+          signal: abort.signal,
+        },
+      );
+      if (
+        current !== sequence.current ||
+        version !== revision.current ||
+        requestedScope !== scopeRef.current
+      )
+        return;
       setData(result);
-      setLoaded(true);
+      setLoadedScope(requestedScope);
       setError("");
       setChangeToken((v) => v + 1);
     } catch (e) {
       if (
         abort.signal.aborted ||
         current !== sequence.current ||
-        version !== revision.current
+        version !== revision.current ||
+        requestedScope !== scopeRef.current
       )
         return;
       setError(e instanceof Error ? e.message : "数据加载失败");
@@ -99,7 +122,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
   useEffect(() => {
+    setLoading(true);
+    setError("");
     void refresh();
+  }, [scope, refresh]);
+  useEffect(() => {
     const focus = () => void refresh();
     window.addEventListener("focus", focus);
     if (typeof BroadcastChannel !== "undefined") {
@@ -208,7 +235,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     <Context.Provider
       value={{
         data,
-        loading,
+        loading: loading || (!loaded && !error),
         loaded,
         error,
         changeToken,

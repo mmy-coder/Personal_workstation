@@ -1,6 +1,6 @@
 "use client";
 import { usePageState, choice, useScrollMemory } from "./use-page-state";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Plus,
   ChevronLeft,
@@ -18,13 +18,15 @@ import { Button } from "./ui/button";
 import { PageHeading } from "./ui/shared";
 import { EventEditor } from "./event-editor";
 import { addDays, dateKey, hours, startOfWeek, timeLabel } from "@/lib/dates";
-import { conflicts, overlapHours, timeStats } from "@/lib/stats";
+import { conflicts, timeStats } from "@/lib/stats";
 import {
   categoryColors,
   eventCategories,
   type CalendarEvent,
 } from "@/lib/types";
+import { eventsForDay, placeEvents } from "@/lib/calendar-layout";
 const HOUR = 48;
+const EMPTY_EVENTS: CalendarEvent[] = [];
 export function Calendar() {
   const { save, notify } = useData(),
     [week, setWeek] = usePageState("week", startOfWeek(new Date()), (value) => {
@@ -57,20 +59,33 @@ export function Calendar() {
   );
   const scroll = useRef<HTMLDivElement>(null),
     resizing = useRef(false);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(week, i));
+  const weekTime = +week;
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(new Date(weekTime), i)),
+    [weekTime],
+  );
   const selectedDay = days[dayIndex];
   const visibleDays = view === "day" ? [selectedDay] : days;
   const query = useRecords<CalendarEvent[]>(eventsURL(week, addDays(week, 7)));
-  const events = query.data || [];
-  const stats = timeStats(events, week, addDays(week, 7));
+  const events = query.data || EMPTY_EVENTS;
+  const stats = useMemo(
+    () => timeStats(events, days[0], addDays(days[0], 7)),
+    [events, days],
+  );
+  const dayLayouts = useMemo(
+    () =>
+      days.map((day) => {
+        const visible = eventsForDay(events, day, filter);
+        return {
+          events: visible,
+          placements: placeEvents(visible),
+          planned: timeStats(events, day, addDays(day, 1)).planned,
+        };
+      }),
+    [events, days, filter],
+  );
   useScrollMemory(!!query.data, scroll, HOUR * 7);
-  const dayEvents = events
-    .filter(
-      (e) =>
-        (filter === "全部" || e.category === filter) &&
-        overlapHours(e, selectedDay, addDays(selectedDay, 1)) > 0,
-    )
-    .sort((a, b) => +new Date(a.start) - +new Date(b.start));
+  const dayEvents = dayLayouts[dayIndex].events;
   function addForDay(day: Date) {
     const start = new Date(day);
     start.setHours(14, 0, 0, 0);
@@ -340,8 +355,7 @@ export function Calendar() {
                       <Plus size={14} />
                     </button>
                     <small>
-                      {hours(timeStats(events, d, addDays(d, 1)).planned)}{" "}
-                      小时计划
+                      {hours(dayLayouts[(d.getDay() + 6) % 7].planned)} 小时计划
                     </small>
                   </div>
                 ))}
@@ -355,40 +369,7 @@ export function Calendar() {
                   ))}
                 </div>
                 {visibleDays.map((day) => {
-                  const visible = events
-                    .filter(
-                      (e) =>
-                        (filter === "全部" || e.category === filter) &&
-                        overlapHours(e, day, addDays(day, 1)) > 0,
-                    )
-                    .sort((a, b) => +new Date(a.start) - +new Date(b.start));
-                  // Allocate columns per overlap group, keeping every conflicting block clickable.
-                  const placements: {
-                    event: CalendarEvent;
-                    column: number;
-                    columns: number;
-                  }[] = [];
-                  let group: typeof placements = [],
-                    groupEnd = 0;
-                  const ends: number[] = [];
-                  const flush = () => {
-                    const count = Math.max(1, ends.length);
-                    group.forEach((p) => (p.columns = count));
-                    placements.push(...group);
-                    group = [];
-                    ends.length = 0;
-                  };
-                  for (const event of visible) {
-                    const begin = +new Date(event.start),
-                      end = +new Date(event.end);
-                    if (begin >= groupEnd) flush();
-                    let column = ends.findIndex((v) => v <= begin);
-                    if (column < 0) column = ends.length;
-                    ends[column] = end;
-                    group.push({ event, column, columns: 1 });
-                    groupEnd = Math.max(groupEnd, end);
-                  }
-                  flush();
+                  const { placements } = dayLayouts[(day.getDay() + 6) % 7];
                   return (
                     <div
                       key={dateKey(day)}

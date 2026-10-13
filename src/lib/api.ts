@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { once, OperationError } from "./idempotency";
+import { once } from "./idempotency";
+import { OperationError, assertWriteOrigin, readJSON } from "./server-request";
 import { db } from "./db";
 import { schemas } from "./validation";
 import type { Resource } from "./types";
@@ -68,19 +69,8 @@ function conflict() {
 export async function mutate(request: Request, resource: string, id?: string) {
   if (!isResource(resource))
     return Response.json({ error: "记录类型不存在" }, { status: 404 });
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (
-        new URL(origin).host !== request.headers.get("host") ||
-        !["http:", "https:"].includes(new URL(origin).protocol)
-      )
-        return Response.json({ error: "不允许跨站写入" }, { status: 403 });
-    } catch {
-      return Response.json({ error: "来源无效" }, { status: 403 });
-    }
-  }
   try {
+    assertWriteOrigin(request);
     const current = id ? await getRecord(resource, id) : null;
     if (id && !current) return missing();
     const token = request.headers.get("if-match");
@@ -102,15 +92,7 @@ export async function mutate(request: Request, resource: string, id?: string) {
         await db.subscriptionPayment.delete({ where });
       return Response.json({ ok: true });
     }
-    const raw = await request.text();
-    if (raw.length > 500000)
-      return Response.json({ error: "内容过大" }, { status: 413 });
-    let patch: unknown;
-    try {
-      patch = JSON.parse(raw);
-    } catch {
-      return Response.json({ error: "请求格式无效" }, { status: 400 });
-    }
+    const patch = await readJSON(request, 500000);
     if (!patch || typeof patch !== "object" || Array.isArray(patch))
       return Response.json({ error: "请求必须是记录对象" }, { status: 400 });
     if (!id) {

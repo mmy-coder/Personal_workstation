@@ -286,7 +286,9 @@ test("四类备份完整恢复，恢复前副本可读，事务中途失败全�
   });
   expect(restored.status()).toBe(200);
   const result = await restored.json();
-  expect(result.safetyCopy).toMatch(/^prisma\/backups\/e2e\.db\//);
+  expect(result.safetyCopy.replaceAll("\\", "/")).toMatch(
+    /^prisma\/backups\/e2e\.db\//,
+  );
   const safety = JSON.parse(await readFile(result.safetyCopy, "utf8"));
   const after = await (await request.get("/api/data")).json();
   for (const kind of [

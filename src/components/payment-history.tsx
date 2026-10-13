@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import type { SubscriptionPayment } from "@/lib/types";
+import { useEffect, useState } from "react";
+import type { RecordPage, SubscriptionPayment } from "@/lib/types";
 import { dateKey, money } from "@/lib/dates";
 import { parseMoney } from "@/lib/validation";
 import { useData } from "./provider";
@@ -8,6 +8,9 @@ import { useCloseGuard } from "./use-close-guard";
 import { Empty, Field, Panel } from "./ui/shared";
 import { Modal } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { useRecords } from "./use-records";
+import { usePageState } from "./use-page-state";
+import { Pagination } from "./ui/pagination";
 function PaymentEditor({
   payment,
   onClose,
@@ -122,7 +125,15 @@ function PaymentEditor({
   );
 }
 export function PaymentHistory() {
-  const { data } = useData();
+  const [page, setPage] = usePageState("paymentPage", 1, (value) =>
+    /^\d+$/.test(value) ? Math.max(1, Math.min(1000000, Number(value))) : 1,
+  );
+  const query = useRecords<RecordPage<SubscriptionPayment>>(
+    `/api/payments?page=${page}`,
+  );
+  useEffect(() => {
+    if (query.data && query.data.page !== page) setPage(query.data.page);
+  }, [query.data, page, setPage]);
   const [editing, setEditing] = useState<SubscriptionPayment | null>(null);
   return (
     <>
@@ -130,7 +141,19 @@ export function PaymentHistory() {
         title="实际付款记录"
         subtitle="仅统计已确认的付款；订阅暂停或删除后仍保留历史记录。"
       >
-        {data.payments.length ? (
+        {query.error && (
+          <div className="sync-warning" role="status">
+            {query.error}
+            <Button variant="outline" onClick={query.retry}>
+              重试
+            </Button>
+          </div>
+        )}
+        {!query.data ? (
+          <p role="status" className="loading">
+            {query.loading ? "正在加载付款记录…" : "暂时无法加载付款记录"}
+          </p>
+        ) : query.data.entries.length ? (
           <div className="table-scroll">
             <table>
               <thead>
@@ -143,21 +166,19 @@ export function PaymentHistory() {
                 </tr>
               </thead>
               <tbody>
-                {[...data.payments]
-                  .sort((a, b) => b.paidOn.localeCompare(a.paidOn))
-                  .map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td>{p.paidOn}</td>
-                      <td>{p.dueOn}</td>
-                      <td>{money(p.amountCents)}</td>
-                      <td>
-                        <Button variant="ghost" onClick={() => setEditing(p)}>
-                          编辑付款
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                {query.data.entries.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.name}</td>
+                    <td>{p.paidOn}</td>
+                    <td>{p.dueOn}</td>
+                    <td>{money(p.amountCents)}</td>
+                    <td>
+                      <Button variant="ghost" onClick={() => setEditing(p)}>
+                        编辑付款
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -165,6 +186,14 @@ export function PaymentHistory() {
           <Empty
             title="还没有实际付款记录"
             description="在订阅旁点击“确认续费”，记录已支付的金额。"
+          />
+        )}
+        {query.data && (
+          <Pagination
+            {...query.data}
+            loading={query.loading}
+            label="付款分页"
+            onPage={setPage}
           />
         )}
       </Panel>

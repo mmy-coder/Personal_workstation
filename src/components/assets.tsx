@@ -1,6 +1,6 @@
 "use client";
 import { usePageState, choice, useScrollMemory } from "./use-page-state";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   Search,
@@ -13,6 +13,10 @@ import {
   Layers,
   Archive,
 } from "lucide-react";
+import { useRecords } from "./use-records";
+import { useDebounced } from "./use-debounced";
+import { Pagination } from "./ui/pagination";
+import type { RecordPage } from "@/lib/types";
 import { useData } from "./provider";
 import { Button } from "./ui/button";
 import { Empty, Metric, PageHeading, Panel } from "./ui/shared";
@@ -26,7 +30,7 @@ import {
   type Item,
   type Subscription,
 } from "@/lib/types";
-import { annualCost, monthlyCost, renewalDays } from "@/lib/stats";
+import { monthlyCost, renewalDays } from "@/lib/stats";
 import { money } from "@/lib/dates";
 export function Assets() {
   const { data } = useData();
@@ -61,46 +65,33 @@ export function Assets() {
     [editor, setEditor] = useState<{ record?: Item | Subscription } | null>(
       null,
     );
-  useScrollMemory();
+  const [page, setPage] = usePageState("page", 1, (value) =>
+    /^\d+$/.test(value) ? Math.max(1, Math.min(1000000, Number(value))) : 1,
+  );
+  const queryText = useDebounced(search);
+  const query = useRecords<RecordPage<Item | Subscription>>(
+    `/api/${tab}?${new URLSearchParams({ page: String(page), q: queryText, category: category === "全部分类" ? "" : category, status: status === "全部状态" ? "" : status, sort })}`,
+  );
+  const records = query.data?.entries || [];
+  const stats = data.assetStats!;
+  useScrollMemory(!!query.data);
+  useEffect(() => {
+    if (query.data && query.data.page !== page) setPage(query.data.page);
+  }, [query.data, page, setPage]);
   const isItem = tab === "items",
-    now = new Date(),
-    active = data.subscriptions.filter((s) => s.status === "使用中");
-  const records = (isItem ? data.items : data.subscriptions)
-    .filter(
-      (r) =>
-        (category === "全部分类" || r.category === category) &&
-        (status === "全部状态" || r.status === status) &&
-        `${r.name} ${r.notes} ${"brand" in r ? `${r.brand} ${r.model}` : ""}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    )
-    .sort((a, b) =>
-      sort === "名称排序"
-        ? a.name.localeCompare(b.name, "zh-CN")
-        : sort === "金额从高到低"
-          ? ("priceCents" in b ? b.priceCents || 0 : b.amountCents) -
-            ("priceCents" in a ? a.priceCents || 0 : a.amountCents)
-          : sort === "续费时间" && "nextRenewal" in a && "nextRenewal" in b
-            ? a.nextRenewal.localeCompare(b.nextRenewal)
-            : +new Date(b.createdAt) - +new Date(a.createdAt),
-    );
-  const aggregate = (kind: "count" | "amount") => {
-    const totals: Record<string, number> = {};
-    (isItem ? data.items : active).forEach((r) => {
-      totals[r.category] =
-        (totals[r.category] || 0) +
-        (kind === "count"
-          ? 1
-          : "priceCents" in r
-            ? (r.priceCents || 0) / 100
-            : monthlyCost(r) / 100);
-    });
-    return Object.entries(totals).map(([name, value]) => ({ name, value }));
-  };
+    now = new Date();
+  const active = data.subscriptions.filter((sub) => sub.status === "使用中");
+  const aggregate = (kind: "count" | "amount") =>
+    isItem
+      ? kind === "count"
+        ? stats.itemCategories
+        : stats.itemAmounts
+      : stats.subscriptionAmounts;
   const upcoming = active
     .filter((s) => renewalDays(s, now) <= 7)
     .sort((a, b) => a.nextRenewal.localeCompare(b.nextRenewal));
   function changeTab(next: typeof tab) {
+    setPage(1);
     setTab(next);
     setCategory("全部分类");
     setStatus("全部状态");
@@ -127,7 +118,7 @@ export function Assets() {
           className={isItem ? "selected" : ""}
         >
           <Package size={17} />
-          我的物品<span>{data.items.length}</span>
+          我的物品<span>{stats.items}</span>
         </button>
         <button
           role="tab"
@@ -136,7 +127,7 @@ export function Assets() {
           className={!isItem ? "selected" : ""}
         >
           <Wallet size={17} />
-          我的订阅<span>{data.subscriptions.length}</span>
+          我的订阅<span>{stats.subscriptions}</span>
         </button>
       </div>
       <div className="metrics four-metrics">
@@ -144,27 +135,25 @@ export function Assets() {
           <>
             <Metric
               label="物品总数"
-              value={data.items.length}
+              value={stats.items}
               unit="件"
               icon={<Layers />}
             />
             <Metric
               label="使用中"
-              value={data.items.filter((i) => i.status === "使用中").length}
+              value={stats.inUse}
               unit="件"
               icon={<Monitor />}
             />
             <Metric
               label="闲置物品"
-              value={data.items.filter((i) => i.status === "闲置").length}
+              value={stats.idle}
               unit="件"
               icon={<Archive />}
             />
             <Metric
               label="累计购买金额"
-              value={money(
-                data.items.reduce((s, i) => s + (i.priceCents || 0), 0),
-              )}
+              value={money(stats.purchaseCents)}
               hint="已填写的购买价格之和"
               icon={<CircleDollarSign />}
               accent
@@ -174,20 +163,20 @@ export function Assets() {
           <>
             <Metric
               label="活跃订阅"
-              value={active.length}
+              value={stats.active}
               unit="项"
               icon={<Layers />}
             />
             <Metric
               label="月均订阅成本"
-              value={money(active.reduce((s, i) => s + monthlyCost(i), 0))}
+              value={money(stats.monthlyCents)}
               hint="年付按 12 个月均摊"
               icon={<Wallet />}
               accent
             />
             <Metric
               label="年化订阅成本"
-              value={money(active.reduce((s, i) => s + annualCost(i), 0))}
+              value={money(stats.annualCents)}
               hint="仅统计使用中的订阅"
             />
             <Metric
@@ -226,14 +215,20 @@ export function Assets() {
                 isItem ? "搜索名称、品牌、备注…" : "搜索订阅名称、备注…"
               }
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <div className="list-filters">
             <select
               aria-label="分类筛选"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setPage(1);
+              }}
             >
               <option>全部分类</option>
               {(isItem ? itemCategories : subscriptionCategories).map((c) => (
@@ -243,7 +238,10 @@ export function Assets() {
             <select
               aria-label="状态筛选"
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
             >
               <option>全部状态</option>
               {(isItem
@@ -256,7 +254,10 @@ export function Assets() {
             <select
               aria-label="排序"
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
+              onChange={(e) => {
+                setSort(e.target.value);
+                setPage(1);
+              }}
             >
               <option>最新添加</option>
               <option>名称排序</option>
@@ -265,7 +266,19 @@ export function Assets() {
             </select>
           </div>
         </div>
-        {records.length === 0 ? (
+        {query.error && (
+          <div className="sync-warning" role="status">
+            {query.error}
+            <Button variant="outline" onClick={query.retry}>
+              重试
+            </Button>
+          </div>
+        )}
+        {!query.data ? (
+          <p role="status" className="loading">
+            {query.loading ? "正在加载记录…" : "暂时无法加载记录"}
+          </p>
+        ) : records.length === 0 ? (
           <Empty
             title={
               search || category !== "全部分类" || status !== "全部状态"
@@ -406,13 +419,21 @@ export function Assets() {
           </div>
         )}
         <div className="table-footer">
-          共 {records.length} 条记录
+          共 {query.data?.total ?? 0} 条记录
           <span>
             {isItem
               ? "累计购买金额不代表当前资产市值"
               : "暂停与取消的订阅不计入活跃成本"}
           </span>
         </div>
+        {query.data && (
+          <Pagination
+            {...query.data}
+            loading={query.loading || search !== queryText}
+            label="资产分页"
+            onPage={setPage}
+          />
+        )}
       </section>
       <div className="two-columns">
         <Panel
@@ -428,7 +449,7 @@ export function Assets() {
         {isItem ? (
           <Panel
             title="购买金额分布"
-            subtitle={`累计购买 ${money(data.items.reduce((sum, item) => sum + (item.priceCents || 0), 0))} · 按已填写价格`}
+            subtitle={`累计购买 ${money(stats.purchaseCents)} · 按已填写价格`}
           >
             <DonutChart
               rows={aggregate("amount")}

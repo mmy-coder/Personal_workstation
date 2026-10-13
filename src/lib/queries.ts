@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "./db";
 import type { Resource } from "./types";
+import { scopedWorkspace } from "./scoped-workspace";
+import { pagedRecords } from "./paged-records";
 
 const instant = z.iso
   .datetime({ offset: true })
@@ -26,6 +28,7 @@ const preview = <T extends { content: string; tags: string }>(row: T) => {
 };
 
 export async function workspaceData(params: URLSearchParams) {
+  if (params.has("scope")) return scopedWorkspace(params);
   const { from, to } = range(params);
   const now = instant.parse(params.get("now"));
   const month = rangeSchema.parse({
@@ -85,6 +88,13 @@ export async function workspaceData(params: URLSearchParams) {
 }
 
 export async function listRecords(resource: Resource, params: URLSearchParams) {
+  if (
+    params.has("page") &&
+    (resource === "items" ||
+      resource === "subscriptions" ||
+      resource === "payments")
+  )
+    return pagedRecords(resource, params);
   if (resource === "events") {
     const bounds =
       params.has("from") || params.has("to") ? range(params) : null;

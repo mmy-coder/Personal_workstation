@@ -1,3 +1,8 @@
+import {
+  OperationError,
+  assertWriteOrigin,
+  readJSON,
+} from "@/lib/server-request";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -11,28 +16,9 @@ import {
 import { z } from "zod";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (
-        new URL(origin).host !== request.headers.get("host") ||
-        !/^https?:$/.test(new URL(origin).protocol)
-      )
-        return Response.json({ error: "不允许跨站恢复" }, { status: 403 });
-    } catch {
-      return Response.json({ error: "来源无效" }, { status: 403 });
-    }
-  }
   try {
-    const raw = await request.text();
-    if (Buffer.byteLength(raw) > backupLimit)
-      return Response.json({ error: "备份不能超过 20 MB" }, { status: 413 });
-    let input: unknown;
-    try {
-      input = JSON.parse(raw);
-    } catch {
-      return Response.json({ error: "文件不是有效 JSON" }, { status: 400 });
-    }
+    assertWriteOrigin(request);
+    const input = await readJSON(request, backupLimit);
     const { mode, backup } = z
       .object({ mode: z.enum(["preview", "restore"]), backup: backupSchema })
       .parse(input);
@@ -190,6 +176,8 @@ export async function POST(request: Request) {
     );
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error instanceof OperationError)
+      return Response.json({ error: error.message }, { status: error.status });
     if (error instanceof z.ZodError)
       return Response.json(
         {

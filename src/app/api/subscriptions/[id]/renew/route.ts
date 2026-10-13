@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { once, OperationError } from "@/lib/idempotency";
+import { once } from "@/lib/idempotency";
+import {
+  OperationError,
+  assertWriteOrigin,
+  readJSON,
+} from "@/lib/server-request";
 import { schemas } from "@/lib/validation";
 import { nextRenewalDate } from "@/lib/renewal";
 const inputSchema = schemas.payments
@@ -13,20 +18,11 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-    const origin = request.headers.get("origin");
-    if (origin && new URL(origin).host !== request.headers.get("host"))
-      throw new OperationError("不允许跨站写入", 403);
+    assertWriteOrigin(request);
     const token = request.headers.get("idempotency-key");
     if (!token) throw new OperationError("缺少请求标识，请重新打开表单", 428);
     const { id } = await ctx.params;
-    const raw = await request.text();
-    if (raw.length > 30000) throw new OperationError("内容过大", 413);
-    let json: unknown;
-    try {
-      json = JSON.parse(raw);
-    } catch {
-      throw new OperationError("请求格式无效", 400);
-    }
+    const json = await readJSON(request, 100000);
     const input = inputSchema.parse(json);
     const result = await once(token, `renew:${id}`, input, async (tx) => {
       const sub = await tx.subscription.findUnique({ where: { id } });

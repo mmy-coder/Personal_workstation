@@ -21,7 +21,6 @@ import { Button } from "./ui/button";
 import { Empty, Metric, MoreLink, PageHeading, Panel } from "./ui/shared";
 import { SeriesChart, DonutChart } from "./charts";
 import { EventEditor } from "./event-editor";
-import { paymentTrend } from "@/lib/renewal";
 import { useJournalEditor } from "./use-journal-editor";
 import { JournalEditor } from "./journal-editor";
 import { AssetEditor } from "./asset-editor";
@@ -35,13 +34,7 @@ import {
   startOfWeek,
   timeLabel,
 } from "@/lib/dates";
-import {
-  billingInMonth,
-  dailyStats,
-  overlapHours,
-  renewalDays,
-  timeStats,
-} from "@/lib/stats";
+import { dailyStats, overlapHours, renewalDays, timeStats } from "@/lib/stats";
 import {
   categoryColors,
   type CalendarEvent,
@@ -81,10 +74,8 @@ export function Dashboard() {
     addDays(today, -6),
     addDays(today, 1),
   );
-  const monthlyBill = data.subscriptions.reduce(
-    (s, sub) => s + billingInMonth(sub, month),
-    0,
-  );
+  const monthlyBill = data.monthlyBill ?? 0;
+  const paymentMonths = data.paymentMonths || [];
   const todayEvents = data.events
     .filter((e) => overlapHours(e, today, addDays(today, 1)) > 0)
     .sort((a, b) => +new Date(a.start) - +new Date(b.start));
@@ -175,7 +166,7 @@ export function Dashboard() {
         />
         <Metric
           label="管理中的物品"
-          value={data.items.length}
+          value={data.assetStats?.items ?? 0}
           unit="件"
           icon={<Package />}
           hint="每一件拥有，都心中有数"
@@ -228,7 +219,7 @@ export function Dashboard() {
         <Panel
           title="订阅支出"
           subtitle={
-            data.payments.length
+            paymentMonths.length
               ? "实际付款历史 · 仅显示有付款记录的月份"
               : "当月预计付款 · 不含暂停和取消的订阅"
           }
@@ -237,8 +228,8 @@ export function Dashboard() {
           <SeriesChart
             type="line"
             rows={
-              data.payments.length
-                ? paymentTrend(data.payments)
+              paymentMonths.length
+                ? paymentMonths
                 : [
                     {
                       name: `${month.getMonth() + 1}月`,
@@ -249,13 +240,13 @@ export function Dashboard() {
             unit="元"
             series={[
               {
-                key: data.payments.length ? "实际付款" : "预计付款",
+                key: paymentMonths.length ? "实际付款" : "预计付款",
                 color: "#368e7b",
               },
             ]}
           />
           <p className="chart-footnote">
-            {data.payments.length
+            {paymentMonths.length
               ? "按付款日期与实际金额汇总，不把未记录的月份视为零支出。"
               : "尚无支付历史，仅展示当月可计算金额，不推算过往支出。"}
           </p>
