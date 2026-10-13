@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { BackupRestore } from "./backup-restore";
+import { AutomaticBackup } from "./automatic-backup";
 import { ClockProvider, useNow } from "./clock-provider";
 import { requestJSON } from "@/lib/http";
 import type { Data } from "@/lib/types";
@@ -33,6 +34,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   const path = usePathname(),
     { notify } = useData();
   const [restoring, setRestoring] = useState(false),
+    [backingUp, setBackingUp] = useState(false),
     [exporting, setExporting] = useState(false),
     [dark, setDark] = useState(false),
     [settings, setSettings] = useState(false),
@@ -185,7 +187,7 @@ function Frame({ children }: { children: React.ReactNode }) {
       <Modal
         open={settings}
         onOpenChange={(open) => {
-          if (!restoring) setSettings(open);
+          if (!restoring && !backingUp) setSettings(open);
         }}
         title="设置与数据"
         description="你的个人空间，由你掌握。"
@@ -215,6 +217,7 @@ function Frame({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
           <BackupRestore onBusy={setRestoring} />
+          <AutomaticBackup onBusy={setBackingUp} />
           <div className="info-box">
             当前时区：{now && Intl.DateTimeFormat().resolvedOptions().timeZone}
             <br />

@@ -86,6 +86,53 @@
 .backup-restore {
   border-top: 1px solid var(--border);
 }
+.backup-controls,
+.bulk-form {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.backup-controls > label:not(.checkbox-field),
+.bulk-form > label:not(.checkbox-field) {
+  display: grid;
+  gap: 6px;
+}
+.bulk-form {
+  padding: 0 24px 24px;
+}
+.backup-controls input[type="number"],
+.bulk-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--background);
+  color: inherit;
+}
+.bulk-records {
+  max-height: 220px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.bulk-records label {
+  overflow-wrap: anywhere;
+}
+.backup-files {
+  padding-left: 20px;
+}
+.backup-files li {
+  margin-top: 8px;
+}
+.backup-files a {
+  text-decoration: underline;
+}
 .backup-restore .settings-row {
   gap: 15px;
 }

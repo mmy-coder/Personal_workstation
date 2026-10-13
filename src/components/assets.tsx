@@ -23,6 +23,7 @@ import { Empty, Metric, PageHeading, Panel } from "./ui/shared";
 import { RenewalEditor } from "./renewal-editor";
 import { PaymentHistory } from "./payment-history";
 import { AssetEditor } from "./asset-editor";
+import { BulkEditor } from "./bulk-editor";
 import { DonutChart } from "./charts";
 import {
   itemCategories,
@@ -34,6 +35,7 @@ import { monthlyCost, renewalDays } from "@/lib/stats";
 import { money } from "@/lib/dates";
 export function Assets() {
   const { data } = useData();
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [renewing, setRenewing] = useState<Subscription | null>(null);
   const [tab, setTab] = usePageState(
       "tab",
@@ -104,12 +106,28 @@ export function Assets() {
         title="资产与订阅"
         description="清楚自己拥有什么，也清楚持续为哪些价值付费。"
         action={
-          <Button onClick={() => setEditor({})}>
-            <Plus size={17} />
-            添加{isItem ? "物品" : "订阅"}
-          </Button>
+          <div className="page-actions">
+            <Button
+              variant="outline"
+              disabled={query.loading || !records.length}
+              onClick={() => setBulkOpen(true)}
+            >
+              批量管理本页
+            </Button>
+            <Button onClick={() => setEditor({})}>
+              <Plus size={17} />
+              添加{isItem ? "物品" : "订阅"}
+            </Button>
+          </div>
         }
       />
+      {bulkOpen && (
+        <BulkEditor
+          resource={tab}
+          records={records}
+          onClose={() => setBulkOpen(false)}
+        />
+      )}
       <div className="tabs" role="tablist" aria-label="资产类型">
         <button
           role="tab"

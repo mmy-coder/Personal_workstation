@@ -17,6 +17,7 @@ import { useData } from "./provider";
 import { Button } from "./ui/button";
 import { PageHeading } from "./ui/shared";
 import { EventEditor } from "./event-editor";
+import { BulkEditor } from "./bulk-editor";
 import { addDays, dateKey, hours, startOfWeek, timeLabel } from "@/lib/dates";
 import { conflicts, timeStats } from "@/lib/stats";
 import {
@@ -28,6 +29,7 @@ import { eventsForDay, placeEvents } from "@/lib/calendar-layout";
 const HOUR = 48;
 const EMPTY_EVENTS: CalendarEvent[] = [];
 export function Calendar() {
+  const [bulkOpen, setBulkOpen] = useState(false);
   const { save, notify } = useData(),
     [week, setWeek] = usePageState("week", startOfWeek(new Date()), (value) => {
       const date = new Date(`${value}T00:00:00`);
@@ -86,6 +88,12 @@ export function Calendar() {
   );
   useScrollMemory(!!query.data, scroll, HOUR * 7);
   const dayEvents = dayLayouts[dayIndex].events;
+  const bulkEvents =
+    view === "day"
+      ? dayEvents
+      : events.filter(
+          (event) => filter === "全部" || event.category === filter,
+        );
   function addForDay(day: Date) {
     const start = new Date(day);
     start.setHours(14, 0, 0, 0);
@@ -169,22 +177,38 @@ export function Calendar() {
         title="时间日历"
         description="给重要的事，留出完整的时间。"
         action={
-          <Button
-            onClick={() => {
-              addForDay(
-                view === "day"
-                  ? selectedDay
-                  : +startOfWeek(new Date()) === +week
-                    ? new Date()
-                    : week,
-              );
-            }}
-          >
-            <Plus size={17} />
-            新建日程
-          </Button>
+          <div className="page-actions">
+            <Button
+              variant="outline"
+              disabled={query.loading || !bulkEvents.length}
+              onClick={() => setBulkOpen(true)}
+            >
+              批量管理日程
+            </Button>
+            <Button
+              onClick={() => {
+                addForDay(
+                  view === "day"
+                    ? selectedDay
+                    : +startOfWeek(new Date()) === +week
+                      ? new Date()
+                      : week,
+                );
+              }}
+            >
+              <Plus size={17} />
+              新建日程
+            </Button>
+          </div>
         }
       />
+      {bulkOpen && (
+        <BulkEditor
+          resource="events"
+          records={bulkEvents}
+          onClose={() => setBulkOpen(false)}
+        />
+      )}
       {query.error && (
         <div className="sync-warning" role="status">
           {query.error}

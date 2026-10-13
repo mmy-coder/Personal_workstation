@@ -8,6 +8,7 @@ export default async function globalSetup() {
       DATABASE_URL: "file:./e2e.db",
       NEXT_DIST_DIR: ".next-e2e",
       NODE_ENV: "production",
+      DISABLE_AUTO_BACKUP: "1",
     },
     stdio: ["ignore", "inherit", "inherit", "ipc"],
     windowsHide: true,
